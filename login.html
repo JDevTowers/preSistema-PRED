@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Repositorio</title>
+    <link rel="stylesheet" href="styles/styleLogin.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>SIMETH</h1>
+                <p>Sistema de Gestion de Repositorio Bibliografico</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="usuario">Usuario</label>
+                    <input 
+                        type="text" 
+                        id="usuario" 
+                        name="usuario" 
+                        placeholder="Ingrese su usuario"
+                        required
+                        autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Contrasena</label>
+                    <div class="password-container">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="Ingrese su contrasena"
+                            required
+                            autocomplete="current-password">
+                        <span class="toggle-password" id="toggleBtn">👁</span>
+                    </div>
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+
+                <button type="submit" class="btn-login">Iniciar Sesion</button>
+            </form>
+
+            <div class="login-footer">
+                <p>Problemas para acceder? Contacta al administrador</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('LOGIN CARGADO');
+
+        // Toggle password
+        document.getElementById('toggleBtn').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                this.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                this.textContent = '👁';
+            }
+        });
+
+        // Form submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const usuario = document.getElementById('usuario').value.trim();
+            const password = document.getElementById('password').value;
+            
+            console.log('ENVIANDO LOGIN');
+            console.log('Usuario:', usuario);
+            console.log('Password length:', password.length);
+            
+            if (!usuario || !password) {
+                mostrarError('Complete todos los campos');
+                return;
+            }
+            
+            fetch('http://localhost:3000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    usuario: usuario, 
+                    password: password 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('RESPUESTA:', data);
+                
+                if (data.success) {
+                    sessionStorage.setItem('usuarioLogueado', data.usuario);
+                    sessionStorage.setItem('nombreCompleto', data.nombre);
+                    sessionStorage.setItem('rol', data.rol);
+                    sessionStorage.setItem('tiempoLogin', new Date().getTime());
+                    window.location.href = 'index.html';
+                } else {
+                    mostrarError(data.mensaje || 'Usuario o contrasena incorrectos');
+                }
+            })
+            .catch(error => {
+                console.error('ERROR:', error);
+                mostrarError('Error de conexion con el servidor');
+            });
+        });
+
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = mensaje;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

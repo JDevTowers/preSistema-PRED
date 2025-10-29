@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distribución de Documentos</title>
+    <link rel="stylesheet" href="styles/styleDistribucion.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-bar">
+            <button class="btn-volver" onclick="window.location.href='index.html'">← Volver</button>
+            <h1>Distribución de Documentos</h1>
+            <div class="info-badge">
+                <span id="totalSeleccionados">0</span> documentos seleccionados
+            </div>
+        </div>
+
+        <div class="grid-distribucion">
+            <div class="grid-header">Portada</div>
+            <div class="grid-header">Título</div>
+            <div class="grid-header">Formato</div>
+            <div class="grid-header">Ubicación 1</div>
+            <div class="grid-header">Ubicación 2</div>
+            <div class="grid-header">Ubicación 3</div>
+        </div>
+
+        <div id="distribucionContainer" class="grid-content">
+            <div class="loading">Cargando documentos seleccionados...</div>
+        </div>
+
+        <div class="footer-actions">
+            <button class="btn-limpiar" onclick="limpiarCarrito()">Limpiar selección</button>
+            <button class="btn-guardar" onclick="guardarDistribucion()">Guardar cambios</button>
+        </div>
+    </div>
+
+    <script>
+        console.log('📦 Distribución cargada');
+
+        let carrito = JSON.parse(localStorage.getItem('carritoDistribucion')) || [];
+        let ubicacionesOriginales = {};
+
+        window.addEventListener('DOMContentLoaded', cargarDocumentosCarrito);
+
+        async function cargarDocumentosCarrito() {
+            if (carrito.length === 0) {
+                document.getElementById('distribucionContainer').innerHTML = 
+                    '<div class="no-data">No hay documentos seleccionados. <a href="index.html">Volver al listado</a></div>';
+                return;
+            }
+
+            document.getElementById('totalSeleccionados').textContent = carrito.length;
+
+            try {
+                const fichas = carrito.join(',');
+                const response = await fetch(`http://localhost:3000/api/ubicaciones?fichas=${fichas}`);
+                const data = await response.json();
+
+                if (data.success && data.data.length > 0) {
+                    mostrarDistribucion(data.data);
+                } else {
+                    document.getElementById('distribucionContainer').innerHTML = 
+                        '<div class="no-data">No se encontraron ubicaciones para los documentos seleccionados</div>';
+                }
+            } catch (error) {
+                console.error('❌ Error:', error);
+                document.getElementById('distribucionContainer').innerHTML = 
+                    '<div class="error">Error al cargar documentos</div>';
+            }
+        }
+
+        function mostrarDistribucion(ubicaciones) {
+            const container = document.getElementById('distribucionContainer');
+            container.innerHTML = '';
+
+            // Agrupar por documento
+            const porDocumento = {};
+            ubicaciones.forEach(ubic => {
+                if (!porDocumento[ubic.fichareg]) {
+                    porDocumento[ubic.fichareg] = {
+                        info: ubic,
+                        ubicaciones: []
+                    };
+                }
+                porDocumento[ubic.fichareg].ubicaciones.push(ubic);
+            });
+
+            // Renderizar cada documento
+            Object.keys(porDocumento).forEach(fichareg => {
+                const doc = porDocumento[fichareg];
+                const primeraUbic = doc.ubicaciones[0];
+                
+                const esDigital = parseInt(primeraUbic.esDigital) || 0;
+                const esImpreso = parseInt(primeraUbic.esImpreso) || 0;
+                
+                let formato = '';
+                if (esImpreso > 0 && esDigital > 0) {
+                    formato = 'Impreso + Digital';
+                } else if (esImpreso > 0) {
+                    formato = 'Impreso';
+                } else if (esDigital > 0) {
+                    formato = 'Digital';
+                } else {
+                    formato = 'Sin formato';
+                }
+
+                const item = document.createElement('div');
+                item.className = 'grid-item-dist';
+
+                // Crear celdas de ubicación (máximo 3)
+                const ubicacionesHTML = [];
+                for (let i = 0; i < 3; i++) {
+                    if (doc.ubicaciones[i]) {
+                        const ubic = doc.ubicaciones[i];
+                        const existencia = parseInt(ubic.existencia) || 0;
+                        const ubicId = `${fichareg}-${i}`;
+                        
+                        ubicacionesOriginales[ubicId] = existencia;
+
+                        ubicacionesHTML.push(`
+                            <div class="ubicacion-cell">
+                                <div class="ubicacion-codigo">${ubic.ubicacion || 'N/A'}</div>
+                                <div class="ubicacion-cantidad">${existencia}</div>
+                                <input 
+                                    type="number" 
+                                    class="input-salida" 
+                                    placeholder="0"
+                                    min="0"
+                                    max="${existencia}"
+                                    value="0"
+                                    data-ubicid="${ubicId}"
+                                    onchange="actualizarCantidad('${ubicId}', this.value)"
+                                    ${existencia === 0 ? 'disabled' : ''}
+                                >
+                            </div>
+                        `);
+                    } else {
+                        ubicacionesHTML.push(`
+                            <div class="ubicacion-cell vacia">
+                                <div class="sin-ubicacion">-</div>
+                            </div>
+                        `);
+                    }
+                }
+                
+                item.innerHTML = `
+                    <div class="portada-dist">
+                        ${primeraUbic.fotos > 0 ? '📷' : '📄'}
+                    </div>
+                    <div class="titulo-dist">
+                        <strong>${primeraUbic.titulo || 'Sin título'}</strong>
+                        <small>${primeraUbic.subtitulo || ''}</small>
+                        <span class="ficha-badge">${fichareg}</span>
+                    </div>
+                    <div class="formato-dist">
+                        ${formato}
+                    </div>
+                    ${ubicacionesHTML.join('')}
+                `;
+
+                container.appendChild(item);
+            });
+
+            console.log(`✅ Distribución mostrada`);
+        }
+
+        function actualizarCantidad(ubicId, salida) {
+            const salidaNum = parseInt(salida) || 0;
+            const original = ubicacionesOriginales[ubicId];
+            const cantDisplay = document.querySelector(`[data-ubicid="${ubicId}"]`).parentNode.querySelector('.ubicacion-cantidad');
+            const input = document.querySelector(`[data-ubicid="${ubicId}"]`);
+
+            if (salidaNum > original) {
+                alert('⚠️ No puedes sacar más de lo disponible');
+                input.value = 0;
+                cantDisplay.textContent = original;
+                return;
+            }
+
+            const nueva = original - salidaNum;
+            cantDisplay.textContent = nueva;
+            cantDisplay.classList.add('actualizado');
+
+            if (nueva === 0) {
+                input.disabled = true;
+                cantDisplay.classList.add('agotado');
+            } else {
+                cantDisplay.classList.remove('agotado');
+            }
+
+            setTimeout(() => cantDisplay.classList.remove('actualizado'), 500);
+        }
+
+        function limpiarCarrito() {
+            if (confirm('¿Seguro que quieres limpiar toda la selección?')) {
+                localStorage.removeItem('carritoDistribucion');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function guardarDistribucion() {
+            const inputs = document.querySelectorAll('.input-salida');
+            const cambios = [];
+
+            inputs.forEach(input => {
+                const salida = parseInt(input.value) || 0;
+                if (salida > 0) {
+                    cambios.push({
+                        ubicId: input.dataset.ubicid,
+                        salida: salida
+                    });
+                }
+            });
+
+            if (cambios.length === 0) {
+                alert('No hay cambios para guardar');
+                return;
+            }
+
+            
+            alert(`Se guardarán ${cambios.length} movimientos.\n\n(Funcionalidad de guardado en desarrollo)`);
+        }
+    </script>
+</body>
+</html>

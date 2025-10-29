@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agregar Documento</title>
+    <link rel="stylesheet" href="styles/styleAgregar.css">
+    
+</head>
+<body>
+    <div class="container">
+        <h2>Agregar Documento</h2>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Título</label>
+                <input type="text" placeholder="Ingrese el título">
+            </div>
+            <div class="form-group">
+                <label>Subtítulo</label>
+                <input type="text" placeholder="Ingrese el subtítulo">
+            </div>
+        </div>
+
+        <!-- Fieldset de Colaboradores/Autores -->
+        <fieldset>
+            <legend>Colaboradores</legend>
+            
+            <div class="colaborador-input-group">
+                <div class="form-group" style="flex: 1;">
+                    <label>Rol del colaborador *</label>
+                    <select id="rolColaborador">
+                        <option value="autor">Autor (A01)</option>
+                        <option value="disparador">Disparador</option>
+                        <option value="colaborador">Colaborador</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 2;">
+                    <label>Colaborador *</label>
+                    <input type="text" id="nombreColaborador" placeholder="Ingrese el nombre">
+                </div>
+            </div>
+
+            <div class="colaborador-buttons">
+                <button type="button" class="btn-agregar-colaborador" onclick="agregarColaborador()">➕ Agregar</button>
+            </div>
+
+            <!-- Lista de colaboradores agregados -->
+            <div id="listaColaboradores" class="lista-colaboradores">
+                <!-- Los colaboradores se agregarán aquí dinámicamente -->
+            </div>
+        </fieldset>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Número de Páginas</label>
+                <input type="number" placeholder="Ingrese el número de páginas">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Documento</label>
+                <div class="tipo-documento-group">
+                    <select id="tipoDocumento" onchange="toggleRevistaFields()">
+                        <option value="catalogo">Catálogo</option>
+                        <option value="revista">Revista</option>
+                    </select>
+                    <button class="btn-add" onclick="mostrarModal()">+ Agregar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Año de Edición</label>
+                <input type="number" placeholder="Ingrese el año de edición">
+            </div>
+            <div class="form-group">
+                <label>Fecha de Publicación</label>
+                <input type="date">
+            </div>
+        </div>
+
+        <!-- Campos para Revista -->
+        <div id="revistaFields" class="revista-fields">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Periodicidad</label>
+                    <input type="text" placeholder="Ingrese la periodicidad">
+                </div>
+                <div class="form-group">
+                    <label>Número</label>
+                    <input type="number" placeholder="Ingrese el número">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Volumen</label>
+                    <input type="number" placeholder="Ingrese el volumen">
+                </div>
+                <div class="form-group">
+                    <label>Año</label>
+                    <input type="number" placeholder="Ingrese el año">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Época</label>
+                <input type="text" placeholder="Ingrese la época">
+            </div>
+        </div>
+
+        <!-- Fieldset Área -->
+        <fieldset>
+            <legend>Área en que se escribe</legend>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area1">
+                    <label for="area1">Ciencias agropecuarias</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area2">
+                    <label for="area2">Ciencias sociales y administrativos</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area3">
+                    <label for="area3">Educación y humanidades</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area4">
+                    <label for="area4">Ingeniería y tecnología</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area5">
+                    <label for="area5">Ciencias de la salud</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="area6">
+                    <label for="area6">Ciencias naturales y exactas</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- Fieldset Identificadores -->
+        <fieldset>
+            <legend>Identificadores</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ISBN Impreso</label>
+                    <input type="text" placeholder="Ingrese ISBN impreso">
+                </div>
+                <div class="form-group">
+                    <label>ISBN Electrónico</label>
+                    <input type="text" placeholder="Ingrese ISBN electrónico">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Código SUA</label>
+                    <input type="text" placeholder="Ingrese código SUA">
+                </div>
+                <div class="form-group">
+                    <label>DOI</label>
+                    <input type="text" placeholder="Ingrese DOI">
+                </div>
+            </div>
+        </fieldset>
+
+        <div>
+            <button class="btn-volver" onclick="window.location.href='index.html'">Volver</button>
+            <button class="btn-submit">Guardar Documento</button>
+        </div>
+    </div>
+
+    <!-- Modal para agregar tipo de documento -->
+    <div id="modalTipoDoc" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Agregar Nuevo Tipo de Documento</div>
+            
+            <div class="form-group">
+                <label>Colección</label>
+                <input type="text" id="coleccion" placeholder="Ingrese la colección">
+            </div>
+            
+            <div class="form-group">
+                <label>Tamaño</label>
+                <input type="text" id="tamano" placeholder="Ingrese el tamaño">
+            </div>
+            
+            <div class="form-group">
+                <label>Portada en</label>
+                <input type="text" id="portadaEn" placeholder="Ingrese portada en">
+            </div>
+            
+            <div class="form-group">
+                <label>Volumen en</label>
+                <input type="text" id="volumenEn" placeholder="Ingrese volumen en">
+            </div>
+            
+            <div class="form-group">
+                <label>ISBN Colección</label>
+                <input type="text" id="isbnColeccion" placeholder="Ingrese ISBN de colección">
+            </div>
+            
+            <div class="form-group">
+                <label>Tintas</label>
+                <input type="text" id="tintas1" placeholder="Ingrese tintas">
+            </div>
+            
+            <div class="form-group">
+                <label>Tintas</label>
+                <input type="text" id="tintas2" placeholder="Ingrese tintas">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-guardar" onclick="guardarTipoDoc()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let colaboradores = [];
+        let colaboradorEnEdicion = null;
+
+        function agregarColaborador() {
+            const rol = document.getElementById('rolColaborador').value;
+            const nombre = document.getElementById('nombreColaborador').value.trim();
+
+            if (!nombre) {
+                alert('Por favor ingrese el nombre del colaborador');
+                return;
+            }
+
+            if (colaboradorEnEdicion !== null) {
+                // Editar colaborador existente
+                colaboradores[colaboradorEnEdicion] = { rol, nombre };
+                colaboradorEnEdicion = null;
+            } else {
+                // Agregar nuevo colaborador
+                colaboradores.push({ rol, nombre });
+            }
+
+            renderizarColaboradores();
+            limpiarCampos();
+        }
+
+        function limpiarCampos() {
+            document.getElementById('rolColaborador').value = 'autor';
+            document.getElementById('nombreColaborador').value = '';
+            colaboradorEnEdicion = null;
+        }
+
+        function editarColaborador(index) {
+            const colaborador = colaboradores[index];
+            document.getElementById('rolColaborador').value = colaborador.rol;
+            document.getElementById('nombreColaborador').value = colaborador.nombre;
+            colaboradorEnEdicion = index;
+        }
+
+        function eliminarColaborador(index) {
+            if (confirm('¿Está seguro de eliminar este colaborador?')) {
+                colaboradores.splice(index, 1);
+                renderizarColaboradores();
+            }
+        }
+
+        function toggleColaborador(element) {
+            element.classList.toggle('expandido');
+        }
+
+        function renderizarColaboradores() {
+            const lista = document.getElementById('listaColaboradores');
+            
+            if (colaboradores.length === 0) {
+                lista.innerHTML = '<p class="sin-colaboradores">No hay colaboradores agregados</p>';
+                return;
+            }
+
+            lista.innerHTML = colaboradores.map((col, index) => `
+                <div class="colaborador-item" onclick="toggleColaborador(this)">
+                    <div class="colaborador-header-item">
+                        <span class="colaborador-icono">👤</span>
+                        <span class="colaborador-nombre-preview">${col.nombre}</span>
+                        <div class="colaborador-acciones" onclick="event.stopPropagation()">
+                            <button class="btn-editar-col" onclick="editarColaborador(${index})" title="Editar">✏️</button>
+                            <button class="btn-eliminar-col" onclick="eliminarColaborador(${index})" title="Eliminar">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="colaborador-detalles">
+                        <div class="detalle-row">
+                            <span class="detalle-label">Rol:</span>
+                            <span class="detalle-valor">${col.rol.charAt(0).toUpperCase() + col.rol.slice(1)}</span>
+                        </div>
+                        <div class="detalle-row">
+                            <span class="detalle-label">Nombre:</span>
+                            <span class="detalle-valor">${col.nombre}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleRevistaFields() {
+            const tipoDoc = document.getElementById('tipoDocumento').value;
+            const revistaFields = document.getElementById('revistaFields');
+            
+            if (tipoDoc === 'revista') {
+                revistaFields.classList.add('visible');
+            } else {
+                revistaFields.classList.remove('visible');
+            }
+        }
+
+        function mostrarModal() {
+            document.getElementById('modalTipoDoc').classList.add('active');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalTipoDoc').classList.remove('active');
+        }
+
+        function guardarTipoDoc() {
+            const coleccion = document.getElementById('coleccion').value;
+            
+            if (coleccion) {
+                const select = document.getElementById('tipoDocumento');
+                const newOption = document.createElement('option');
+                newOption.value = coleccion.toLowerCase().replace(/\s+/g, '-');
+                newOption.textContent = coleccion;
+                select.appendChild(newOption);
+                select.value = newOption.value;
+                
+                cerrarModal();
+                document.getElementById('coleccion').value = '';
+                document.getElementById('tamano').value = '';
+                document.getElementById('portadaEn').value = '';
+                document.getElementById('volumenEn').value = '';
+                document.getElementById('isbnColeccion').value = '';
+                document.getElementById('tintas1').value = '';
+                document.getElementById('tintas2').value = '';
+            }
+        }
+
+        document.getElementById('modalTipoDoc').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+    </script>
+</body>
+</html>

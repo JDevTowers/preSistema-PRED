@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repositorio Bibliográfico - Listado</title>
+    <link rel="stylesheet" href="styles/styleIndex.css">
+</head>
+<body>
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Buscar en el repositorio...">
+            <button class="btn-distribucion" onclick="irADistribucion()">
+                Distribución <span id="contadorCarrito" class="contador-badge">0</span>
+            </button>
+            <button class="btn-nuevo" onclick="window.location.href='agregar.html'">Nuevo</button>
+        </div>
+
+        <div class="grid-container">
+            <div class="grid-header">Portada</div>
+            <div class="grid-header">Título</div>
+            <div class="grid-header">Autores</div>
+            <div class="grid-header">Impreso</div>
+            <div class="grid-header">Categoría</div>
+            <div class="grid-header">Acciones</div>
+        </div>
+
+        <div id="documentosContainer" class="grid-content">
+            <div class="loading">Cargando documentos...</div>
+        </div>
+    </div>
+    
+    <script>
+
+        // Carrito en localStorage
+        let carrito = JSON.parse(localStorage.getItem('carritoDistribucion')) || [];
+        actualizarContador();
+
+        window.addEventListener('DOMContentLoaded', cargarDocumentos);
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const busqueda = e.target.value.toLowerCase();
+            filtrarDocumentos(busqueda);
+        });
+
+        async function cargarDocumentos() {
+            const container = document.getElementById('documentosContainer');
+            
+            try {
+                console.log('⏳ Obteniendo documentos...');
+                const response = await fetch('http://localhost:3000/api/documentos');
+                const data = await response.json();
+                
+                
+                if (data.success && data.data.length > 0) {
+                    mostrarDocumentos(data.data);
+                } else {
+                    container.innerHTML = '<div class="no-data">No hay documentos disponibles</div>';
+                }
+                
+            } catch (error) {
+                container.innerHTML = '<div class="error">Error al cargar documentos. Verifica que el servidor esté corriendo.</div>';
+            }
+        }
+
+        function mostrarDocumentos(documentos) {
+            const container = document.getElementById('documentosContainer');
+            container.innerHTML = '';
+            
+            documentos.forEach(doc => {
+                const item = document.createElement('div');
+                item.className = 'grid-item';
+                item.dataset.fichareg = doc.fichareg;
+                item.dataset.titulo = (doc.titulo || '').toLowerCase();
+                item.dataset.autor = (doc.autor || '').toLowerCase();
+                item.dataset.categoria = (doc.tipo || '').toLowerCase();
+                
+                // Determinar formato y total
+                let formato = '';
+                let total = 0;
+
+                const fisica = parseInt(doc.existenciaFisica) || 0;
+                const digital = parseInt(doc.existenciaDigital) || 0;
+                const esDigital = parseInt(doc.esDigital) || 0;
+                const esImpreso = parseInt(doc.esImpreso) || 0;
+
+                if (esImpreso > 0 && esDigital > 0) {
+                    formato = 'Impreso y Digital';
+                    total = fisica + digital;
+                } else if (esImpreso > 0 || fisica > 0) {
+                    formato = 'Impreso';
+                    total = fisica;
+                } else if (esDigital > 0 || digital > 0) {
+                    formato = 'Digital';
+                    total = digital;
+                } else {
+                    formato = 'No especificado';
+                }
+
+                // Verificar si está en el carrito
+                const enCarrito = carrito.includes(doc.fichareg);
+                
+                item.innerHTML = `
+                    <div class="portada">
+                        ${doc.fotos > 0 ? '📷' : '📄'}
+                    </div>
+                    <div class="titulo">
+                        <strong>${doc.titulo || 'Sin título'}</strong>
+                        <small>${doc.subtitulo || ''}</small>
+                    </div>
+                    <div class="autores">${doc.autor || 'Sin autor'}</div>
+                    <div class="impreso">
+                        ${formato}
+                        <small>Total: ${total}</small>
+                    </div>
+                    <div class="categoria">${doc.tipo || 'Sin categoría'}</div>
+                    <div class="acciones">
+                        <button class="btn-accion btn-carrito ${enCarrito ? 'activo' : ''}" 
+                                title="${enCarrito ? 'Quitar del carrito' : 'Agregar al carrito'}" 
+                                onclick="toggleCarrito('${doc.fichareg}', this)">
+                            🛒
+                        </button>
+                        <button class="btn-accion btn-editar" title="Editar" onclick="editar('${doc.fichareg}')">✏️</button>
+                        <button class="btn-accion btn-eliminar" title="Eliminar" onclick="eliminar('${doc.fichareg}')">🗑️</button>
+                    </div>
+                `;
+                
+                container.appendChild(item);
+            });
+            
+            console.log(`✅ ${documentos.length} documentos mostrados`);
+        }
+
+        function toggleCarrito(fichareg, btn) {
+            const index = carrito.indexOf(fichareg);
+            
+            if (index > -1) {
+                // Quitar del carrito
+                carrito.splice(index, 1);
+                btn.classList.remove('activo');
+                console.log('🛒 Quitado del carrito:', fichareg);
+            } else {
+                // Agregar al carrito
+                carrito.push(fichareg);
+                btn.classList.add('activo');
+                console.log('🛒 Agregado al carrito:', fichareg);
+            }
+            
+            localStorage.setItem('carritoDistribucion', JSON.stringify(carrito));
+            actualizarContador();
+        }
+
+        function actualizarContador() {
+            const badge = document.getElementById('contadorCarrito');
+            badge.textContent = carrito.length;
+            badge.style.display = carrito.length > 0 ? 'inline-block' : 'none';
+        }
+
+        function irADistribucion() {
+            if (carrito.length === 0) {
+                alert('⚠️ No has seleccionado ningún documento para distribución');
+                return;
+            }
+            window.location.href = 'distribucion.html';
+        }
+
+        function filtrarDocumentos(busqueda) {
+            const items = document.querySelectorAll('.grid-item');
+            let visibles = 0;
+            
+            items.forEach(item => {
+                const titulo = item.dataset.titulo || '';
+                const autor = item.dataset.autor || '';
+                const categoria = item.dataset.categoria || '';
+                
+                if (titulo.includes(busqueda) || autor.includes(busqueda) || categoria.includes(busqueda)) {
+                    item.style.display = 'grid';
+                    visibles++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            console.log(`🔍 ${visibles} documentos encontrados`);
+        }
+
+        function editar(fichareg) {
+            console.log('✏️ Editar:', fichareg);
+            window.location.href = `editar.html?id=${fichareg}`;
+        }
+
+        function eliminar(fichareg) {
+            if (confirm('¿Está seguro de eliminar este documento?')) {
+                console.log('🗑️ Eliminar:', fichareg);
+                alert('Funcionalidad de eliminar en desarrollo');
+            }
+        }
+    </script>
+</body>
+</html>

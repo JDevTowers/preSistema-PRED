@@ -1,0 +1,261 @@
+/* styleIndex.css - Estilos para la página principal (index.html) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Barra de búsqueda */
+.search-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    align-items: center;
+}
+
+.search-bar input {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+.btn-distribucion {
+    padding: 12px 30px;
+    background-color: #FF9800;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.btn-distribucion:hover {
+    background-color: #F57C00;
+}
+
+.btn-nuevo {
+    padding: 12px 30px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.btn-nuevo:hover {
+    background-color: #45a049;
+}
+
+/* Grid Container - Headers */
+.grid-container {
+    display: grid;
+    grid-template-columns: 100px 2.5fr 1.5fr 1fr 1fr 180px;
+    gap: 0;
+    background-color: #2c3e50;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+}
+
+.grid-header {
+    padding: 15px;
+    font-weight: 700;
+    color: white;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.grid-header:last-child {
+    border-right: none;
+}
+
+/* Grid Content Wrapper */
+.grid-content {
+    display: block;
+}
+
+/* Grid Item - Cada fila de documento */
+.grid-item {
+    display: grid;
+    grid-template-columns: 100px 2.5fr 1.5fr 1fr 1fr 180px;
+    gap: 0;
+    border-bottom: 1px solid #e0e0e0;
+    transition: background-color 0.2s;
+}
+
+.grid-item:hover {
+    background-color: #f8f8f8;
+}
+
+.grid-item > div {
+    padding: 20px 15px;
+    border-right: 1px solid #f0f0f0;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-item > div:last-child {
+    border-right: none;
+}
+
+/* Columnas específicas */
+.portada {
+    font-size: 45px;
+    justify-content: center;
+}
+
+.titulo {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    flex-direction: column;
+    align-items: flex-start !important;
+    padding-left: 20px !important;
+}
+
+.titulo strong {
+    font-size: 15px;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.titulo small {
+    font-size: 13px;
+    color: #7f8c8d;
+}
+
+.autores {
+    font-size: 13px;
+    color: #555;
+}
+
+.impreso {
+    text-align: center;
+    font-size: 13px;
+    color: #333;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.impreso small {
+    font-size: 11px;
+    color: #999;
+}
+
+.categoria {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.acciones {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-accion {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: opacity 0.3s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-accion:hover {
+    opacity: 0.9;
+    transform: scale(1.08);
+}
+
+.btn-carrito {
+    background-color: #9C27B0;
+    color: white;
+}
+
+.btn-editar {
+    background-color: #2196F3;
+    color: white;
+}
+
+.btn-eliminar {
+    background-color: #f44336;
+    color: white;
+}
+
+/* Estados de carga y error */
+.loading, .no-data, .error {
+    text-align: center;
+    padding: 40px;
+    font-size: 16px;
+    color: #666;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.error {
+    color: #d32f2f;
+    background: #ffebee;
+    border-radius: 8px;
+    margin: 10px;
+}
+
+/* Estilos para el carrito */
+.btn-carrito.activo {
+    background-color: #4CAF50 !important;
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.6);
+    transform: scale(1.1);
+}
+
+.contador-badge {
+    display: none;
+    background-color: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 8px;
+    animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
