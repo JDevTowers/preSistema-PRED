@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repositorio Bibliográfico - Listado</title>
+    <title>Repositorio Bibliográfico</title>
     <link rel="stylesheet" href="styles/styleIndex.css">
 </head>
 <body>
@@ -29,37 +29,42 @@
             <div class="loading">Cargando documentos...</div>
         </div>
     </div>
-    
-    <script>
 
-        // Carrito en localStorage
+    <!-- GALERÍA MODAL -->
+    <div id="galeria" class="galeria-modal" style="display:none;" onclick="cerrarGaleria()">
+        <div class="galeria-contenido" onclick="event.stopPropagation()">
+            <span class="cerrar-galeria" onclick="cerrarGaleria()">×</span>
+            <div id="galeria-imagenes"></div>
+            <div class="galeria-nav">
+                <button onclick="cambiarFoto(-1)">‹</button>
+                <span id="galeria-contador"></span>
+                <button onclick="cambiarFoto(1)">›</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
         let carrito = JSON.parse(localStorage.getItem('carritoDistribucion')) || [];
-        actualizarContador();
+        let fotoActual = 1;
+        let totalFotos = 0;
+        let ficharegActual = '';
 
         window.addEventListener('DOMContentLoaded', cargarDocumentos);
-
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const busqueda = e.target.value.toLowerCase();
-            filtrarDocumentos(busqueda);
-        });
+        document.getElementById('searchInput').addEventListener('input', e => filtrarDocumentos(e.target.value.toLowerCase()));
 
         async function cargarDocumentos() {
             const container = document.getElementById('documentosContainer');
-            
             try {
-                console.log('⏳ Obteniendo documentos...');
                 const response = await fetch('http://localhost:3000/api/documentos');
                 const data = await response.json();
-                
-                
                 if (data.success && data.data.length > 0) {
                     mostrarDocumentos(data.data);
                 } else {
                     container.innerHTML = '<div class="no-data">No hay documentos disponibles</div>';
                 }
-                
             } catch (error) {
-                container.innerHTML = '<div class="error">Error al cargar documentos. Verifica que el servidor esté corriendo.</div>';
+                console.error('Error al cargar:', error);
+                container.innerHTML = '<div class="error">Error al cargar documentos</div>';
             }
         }
 
@@ -74,35 +79,30 @@
                 item.dataset.titulo = (doc.titulo || '').toLowerCase();
                 item.dataset.autor = (doc.autor || '').toLowerCase();
                 item.dataset.categoria = (doc.tipo || '').toLowerCase();
-                
-                // Determinar formato y total
-                let formato = '';
-                let total = 0;
 
                 const fisica = parseInt(doc.existenciaFisica) || 0;
-                const digital = parseInt(doc.existenciaDigital) || 0;
                 const esDigital = parseInt(doc.esDigital) || 0;
                 const esImpreso = parseInt(doc.esImpreso) || 0;
 
-                if (esImpreso > 0 && esDigital > 0) {
-                    formato = 'Impreso y Digital';
-                    total = fisica + digital;
-                } else if (esImpreso > 0 || fisica > 0) {
-                    formato = 'Impreso';
-                    total = fisica;
-                } else if (esDigital > 0 || digital > 0) {
-                    formato = 'Digital';
-                    total = digital;
-                } else {
-                    formato = 'No especificado';
-                }
+                let formato = '';
+                if (esImpreso && esDigital) formato = 'Impreso + Digital';
+                else if (esImpreso || fisica > 0) formato = 'Impreso';
+                else if (esDigital) formato = 'Digital';
+                else formato = 'Sin formato';
 
-                // Verificar si está en el carrito
                 const enCarrito = carrito.includes(doc.fichareg);
-                
+
                 item.innerHTML = `
                     <div class="portada">
-                        ${doc.fotos > 0 ? '📷' : '📄'}
+                        ${doc.fotos > 0 
+                            ? `<img src="/fotos/${doc.fichareg}_1.jpg" alt="Portada" class="foto-mini" 
+                                    onerror="this.style.display='none'; this.parentNode.querySelector('.sin-imagen').style.display='flex';"
+                                    onclick="abrirGaleria('${doc.fichareg}', ${doc.fotos})">`
+                            : ''
+                        }
+                        <div class="sin-imagen" style="display: ${doc.fotos > 0 ? 'none' : 'flex'};">
+                            Sin imagen
+                        </div>
                     </div>
                     <div class="titulo">
                         <strong>${doc.titulo || 'Sin título'}</strong>
@@ -111,41 +111,30 @@
                     <div class="autores">${doc.autor || 'Sin autor'}</div>
                     <div class="impreso">
                         ${formato}
-                        <small>Total: ${total}</small>
+                        <small>Total físico: ${fisica}</small>
                     </div>
                     <div class="categoria">${doc.tipo || 'Sin categoría'}</div>
                     <div class="acciones">
                         <button class="btn-accion btn-carrito ${enCarrito ? 'activo' : ''}" 
-                                title="${enCarrito ? 'Quitar del carrito' : 'Agregar al carrito'}" 
-                                onclick="toggleCarrito('${doc.fichareg}', this)">
-                            🛒
-                        </button>
-                        <button class="btn-accion btn-editar" title="Editar" onclick="editar('${doc.fichareg}')">✏️</button>
-                        <button class="btn-accion btn-eliminar" title="Eliminar" onclick="eliminar('${doc.fichareg}')">🗑️</button>
+                                onclick="toggleCarrito('${doc.fichareg}', this)">Carrito</button>
+                        <button class="btn-accion btn-editar" onclick="editar('${doc.fichareg}')">Editar</button>
+                        <button class="btn-accion btn-eliminar" onclick="eliminar('${doc.fichareg}')">Eliminar</button>
                     </div>
                 `;
-                
                 container.appendChild(item);
             });
-            
-            console.log(`✅ ${documentos.length} documentos mostrados`);
+            actualizarContador();
         }
 
         function toggleCarrito(fichareg, btn) {
             const index = carrito.indexOf(fichareg);
-            
             if (index > -1) {
-                // Quitar del carrito
                 carrito.splice(index, 1);
                 btn.classList.remove('activo');
-                console.log('🛒 Quitado del carrito:', fichareg);
             } else {
-                // Agregar al carrito
                 carrito.push(fichareg);
                 btn.classList.add('activo');
-                console.log('🛒 Agregado al carrito:', fichareg);
             }
-            
             localStorage.setItem('carritoDistribucion', JSON.stringify(carrito));
             actualizarContador();
         }
@@ -157,43 +146,55 @@
         }
 
         function irADistribucion() {
-            if (carrito.length === 0) {
-                alert('⚠️ No has seleccionado ningún documento para distribución');
-                return;
-            }
+            if (carrito.length === 0) return alert('Selecciona al menos un documento');
             window.location.href = 'distribucion.html';
         }
 
         function filtrarDocumentos(busqueda) {
-            const items = document.querySelectorAll('.grid-item');
-            let visibles = 0;
-            
-            items.forEach(item => {
-                const titulo = item.dataset.titulo || '';
-                const autor = item.dataset.autor || '';
-                const categoria = item.dataset.categoria || '';
-                
-                if (titulo.includes(busqueda) || autor.includes(busqueda) || categoria.includes(busqueda)) {
-                    item.style.display = 'grid';
-                    visibles++;
-                } else {
-                    item.style.display = 'none';
-                }
+            document.querySelectorAll('.grid-item').forEach(item => {
+                const visible = item.dataset.titulo.includes(busqueda) || 
+                                item.dataset.autor.includes(busqueda) || 
+                                item.dataset.categoria.includes(busqueda);
+                item.style.display = visible ? 'grid' : 'none';
             });
-            
-            console.log(`🔍 ${visibles} documentos encontrados`);
         }
 
-        function editar(fichareg) {
-            console.log('✏️ Editar:', fichareg);
-            window.location.href = `editar.html?id=${fichareg}`;
+        function editar(fichareg) { 
+            window.location.href = `editar.html?id=${fichareg}`; 
         }
 
-        function eliminar(fichareg) {
-            if (confirm('¿Está seguro de eliminar este documento?')) {
-                console.log('🗑️ Eliminar:', fichareg);
-                alert('Funcionalidad de eliminar en desarrollo');
+        function eliminar(fichareg) { 
+            if (confirm('¿Eliminar este documento?')) {
+                alert('Función en desarrollo');
             }
+        }
+
+        // GALERÍA
+        function abrirGaleria(fichareg, total) {
+            ficharegActual = fichareg;
+            totalFotos = total;
+            fotoActual = 1;
+            mostrarFoto();
+            document.getElementById('galeria').style.display = 'flex';
+        }
+
+        function mostrarFoto() {
+            const contenedor = document.getElementById('galeria-imagenes');
+            const contador = document.getElementById('galeria-contador');
+            contenedor.innerHTML = `
+                <img src="/fotos/${ficharegActual}_${fotoActual}.jpg" class="foto-grande" 
+                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjIwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wnYy1PC90ZXh0Pjwvc3ZnPg=='">
+            `;
+            contador.textContent = `${fotoActual} / ${totalFotos}`;
+        }
+
+        function cambiarFoto(dir) {
+            fotoActual = ((fotoActual + dir - 1 + totalFotos) % totalFotos) + 1;
+            mostrarFoto();
+        }
+
+        function cerrarGaleria() {
+            document.getElementById('galeria').style.display = 'none';
         }
     </script>
 </body>

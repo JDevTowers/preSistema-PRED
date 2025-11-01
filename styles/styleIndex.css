@@ -1,5 +1,3 @@
-/* styleIndex.css - Estilos para la página principal (index.html) */
-
 * {
     margin: 0;
     padding: 0;
@@ -10,6 +8,16 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f5f5f5;
     padding: 20px;
+}
+
+/* PORTADA: FOTO O SIN IMAGEN */
+.portada {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
 }
 
 .container {
@@ -258,4 +266,99 @@ body {
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.15); }
+}
+
+/* ========== FOTOS Y GALERÍA ========== */
+.foto-mini {
+    width: 60px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid #ddd;
+    transition: all 0.2s;
+}
+
+.foto-mini:hover {
+    transform: scale(1.08);
+    border-color: #4CAF50;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.sin-imagen {
+    font-size: 11px;
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    width: 60px;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #f9f9f9;
+    border: 2px dashed #ddd;
+    border-radius: 6px;
+}
+
+.foto-grande {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+
+/* GALERÍA MODAL */
+.galeria-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.galeria-contenido {
+    position: relative;
+    text-align: center;
+    max-width: 90%;
+}
+
+.cerrar-galeria {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.galeria-nav {
+    margin-top: 15px;
+}
+
+.galeria-nav button {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin: 0 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.galeria-nav button:hover {
+    background: rgba(255,255,255,0.4);
+}
+
+#galeria-contador {
+    color: white;
+    font-size: 16px;
+    min-width: 60px;
+    display: inline-block;
 }

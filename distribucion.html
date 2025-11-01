@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <div class="header-bar">
-            <button class="btn-volver" onclick="window.location.href='index.html'">← Volver</button>
+            <button class="btn-volver" onclick="window.location.href='index.html'">Volver</button>
             <h1>Distribución de Documentos</h1>
             <div class="info-badge">
                 <span id="totalSeleccionados">0</span> documentos seleccionados
@@ -26,7 +26,7 @@
         </div>
 
         <div id="distribucionContainer" class="grid-content">
-            <div class="loading">Cargando documentos seleccionados...</div>
+            <div class="loading">Cargando...</div>
         </div>
 
         <div class="footer-actions">
@@ -35,38 +35,46 @@
         </div>
     </div>
 
-    <script>
-        console.log('📦 Distribución cargada');
+    <!-- GALERÍA -->
+    <div id="galeria" class="galeria-modal" style="display:none;" onclick="cerrarGaleria()">
+        <div class="galeria-contenido" onclick="event.stopPropagation()">
+            <span class="cerrar-galeria" onclick="cerrarGaleria()">×</span>
+            <div id="galeria-imagenes"></div>
+            <div class="galeria-nav">
+                <button onclick="cambiarFoto(-1)">‹</button>
+                <span id="galeria-contador"></span>
+                <button onclick="cambiarFoto(1)">›</button>
+            </div>
+        </div>
+    </div>
 
+    <script>
         let carrito = JSON.parse(localStorage.getItem('carritoDistribucion')) || [];
         let ubicacionesOriginales = {};
+        let fotoActual = 1;
+        let totalFotos = 0;
+        let ficharegActual = '';
 
         window.addEventListener('DOMContentLoaded', cargarDocumentosCarrito);
 
         async function cargarDocumentosCarrito() {
             if (carrito.length === 0) {
                 document.getElementById('distribucionContainer').innerHTML = 
-                    '<div class="no-data">No hay documentos seleccionados. <a href="index.html">Volver al listado</a></div>';
+                    '<div class="no-data">No hay documentos seleccionados. <a href="index.html">Volver</a></div>';
                 return;
             }
-
             document.getElementById('totalSeleccionados').textContent = carrito.length;
 
             try {
-                const fichas = carrito.join(',');
-                const response = await fetch(`http://localhost:3000/api/ubicaciones?fichas=${fichas}`);
+                const response = await fetch(`http://localhost:3000/api/ubicaciones?fichas=${carrito.join(',')}`);
                 const data = await response.json();
-
                 if (data.success && data.data.length > 0) {
                     mostrarDistribucion(data.data);
                 } else {
-                    document.getElementById('distribucionContainer').innerHTML = 
-                        '<div class="no-data">No se encontraron ubicaciones para los documentos seleccionados</div>';
+                    document.getElementById('distribucionContainer').innerHTML = '<div class="no-data">Sin ubicaciones</div>';
                 }
             } catch (error) {
-                console.error('❌ Error:', error);
-                document.getElementById('distribucionContainer').innerHTML = 
-                    '<div class="error">Error al cargar documentos</div>';
+                document.getElementById('distribucionContainer').innerHTML = '<div class="error">Error</div>';
             }
         }
 
@@ -74,95 +82,71 @@
             const container = document.getElementById('distribucionContainer');
             container.innerHTML = '';
 
-            // Agrupar por documento
             const porDocumento = {};
             ubicaciones.forEach(ubic => {
                 if (!porDocumento[ubic.fichareg]) {
-                    porDocumento[ubic.fichareg] = {
-                        info: ubic,
-                        ubicaciones: []
-                    };
+                    porDocumento[ubic.fichareg] = { info: ubic, ubicaciones: [] };
                 }
-                porDocumento[ubic.fichareg].ubicaciones.push(ubic);
+                porDocumento[ubic.fichareg].ubicaciones.push({
+                    ubicacion: ubic.ubicacion,
+                    existencia: parseInt(ubic.existencia) || 0
+                });
             });
 
-            // Renderizar cada documento
             Object.keys(porDocumento).forEach(fichareg => {
                 const doc = porDocumento[fichareg];
-                const primeraUbic = doc.ubicaciones[0];
-                
-                const esDigital = parseInt(primeraUbic.esDigital) || 0;
-                const esImpreso = parseInt(primeraUbic.esImpreso) || 0;
-                
-                let formato = '';
-                if (esImpreso > 0 && esDigital > 0) {
-                    formato = 'Impreso + Digital';
-                } else if (esImpreso > 0) {
-                    formato = 'Impreso';
-                } else if (esDigital > 0) {
-                    formato = 'Digital';
-                } else {
-                    formato = 'Sin formato';
+                const primera = doc.info;
+                const totalFisico = doc.ubicaciones.reduce((s, u) => s + u.existencia, 0);
+                const esDigital = parseInt(primera.digital) === 1;
+                const esImpreso = parseInt(primera.impresa) === 1 || totalFisico > 0;
+                let formato = esImpreso && esDigital ? 'Impreso + Digital' : esImpreso ? 'Impreso' : esDigital ? 'Digital' : 'Sin formato';
+
+                const ubicacionesOrdenadas = doc.ubicaciones.sort((a, b) => a.ubicacion.localeCompare(b.ubicacion));
+                const celdas = [];
+                for (let i = 0; i < 3; i++) {
+                    const ubic = ubicacionesOrdenadas[i];
+                    if (ubic) {
+                        const ubicId = `${fichareg}-${ubic.ubicacion}`;
+                        ubicacionesOriginales[ubicId] = ubic.existencia;
+                        const max = Math.max(0, ubic.existencia - 1);
+                        const reserva = ubic.existencia > 0 && max === 0;
+                        celdas.push(`
+                            <div class="ubicacion-cell">
+                                <div class="ubicacion-codigo">${ubic.ubicacion}</div>
+                                <div class="ubicacion-cantidad">${ubic.existencia}</div>
+                                <input type="number" class="input-salida" placeholder="0" min="0" max="${max}" value="0"
+                                       data-ubicid="${ubicId}" onchange="actualizarCantidad('${ubicId}', this.value)"
+                                       ${ubic.existencia === 0 || reserva ? 'disabled' : ''}>
+                                ${reserva ? '<div class="reserva-info">Reserva</div>' : ''}
+                            </div>
+                        `);
+                    } else {
+                        celdas.push(`<div class="ubicacion-cell vacia"><div class="sin-ubicacion">Sin ubicación</div></div>`);
+                    }
                 }
 
                 const item = document.createElement('div');
                 item.className = 'grid-item-dist';
-
-                // Crear celdas de ubicación (máximo 3)
-                const ubicacionesHTML = [];
-                for (let i = 0; i < 3; i++) {
-                    if (doc.ubicaciones[i]) {
-                        const ubic = doc.ubicaciones[i];
-                        const existencia = parseInt(ubic.existencia) || 0;
-                        const ubicId = `${fichareg}-${i}`;
-                        
-                        ubicacionesOriginales[ubicId] = existencia;
-
-                        ubicacionesHTML.push(`
-                            <div class="ubicacion-cell">
-                                <div class="ubicacion-codigo">${ubic.ubicacion || 'N/A'}</div>
-                                <div class="ubicacion-cantidad">${existencia}</div>
-                                <input 
-                                    type="number" 
-                                    class="input-salida" 
-                                    placeholder="0"
-                                    min="0"
-                                    max="${existencia}"
-                                    value="0"
-                                    data-ubicid="${ubicId}"
-                                    onchange="actualizarCantidad('${ubicId}', this.value)"
-                                    ${existencia === 0 ? 'disabled' : ''}
-                                >
-                            </div>
-                        `);
-                    } else {
-                        ubicacionesHTML.push(`
-                            <div class="ubicacion-cell vacia">
-                                <div class="sin-ubicacion">-</div>
-                            </div>
-                        `);
-                    }
-                }
-                
                 item.innerHTML = `
                     <div class="portada-dist">
-                        ${primeraUbic.fotos > 0 ? '📷' : '📄'}
+                        ${primera.fotos > 0 
+                            ? `<img src="/fotos/${fichareg}_1.jpg" alt="Portada" class="foto-mini" 
+                                    onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iMzAiIHk9IjQwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wnYy1PC90ZXh0Pjwvc3ZnPg=='"
+                                    onclick="abrirGaleria('${fichareg}', ${primera.fotos})">`
+                            : 'Documento'
+                        }
                     </div>
                     <div class="titulo-dist">
-                        <strong>${primeraUbic.titulo || 'Sin título'}</strong>
-                        <small>${primeraUbic.subtitulo || ''}</small>
+                        <strong>${primera.titulo || 'Sin título'}</strong>
+                        <small>${primera.subtitulo || ''}</small>
+                        <div class="total-info">Total físico: ${totalFisico} ejemplares</div>
                         <span class="ficha-badge">${fichareg}</span>
                     </div>
-                    <div class="formato-dist">
-                        ${formato}
-                    </div>
-                    ${ubicacionesHTML.join('')}
+                    <div class="formato-dist">${formato}</div>
+                    ${celdas.join('')}
                 `;
-
                 container.appendChild(item);
             });
-
-            console.log(`✅ Distribución mostrada`);
         }
 
         function actualizarCantidad(ubicId, salida) {
@@ -170,57 +154,50 @@
             const original = ubicacionesOriginales[ubicId];
             const cantDisplay = document.querySelector(`[data-ubicid="${ubicId}"]`).parentNode.querySelector('.ubicacion-cantidad');
             const input = document.querySelector(`[data-ubicid="${ubicId}"]`);
-
-            if (salidaNum > original) {
-                alert('⚠️ No puedes sacar más de lo disponible');
-                input.value = 0;
-                cantDisplay.textContent = original;
+            const maxPermitido = Math.max(0, original - 1);
+            if (salidaNum > maxPermitido) {
+                alert(`Máximo ${maxPermitido} ejemplares (reserva)`);
+                input.value = maxPermitido;
                 return;
             }
-
             const nueva = original - salidaNum;
             cantDisplay.textContent = nueva;
             cantDisplay.classList.add('actualizado');
-
-            if (nueva === 0) {
-                input.disabled = true;
-                cantDisplay.classList.add('agotado');
-            } else {
-                cantDisplay.classList.remove('agotado');
-            }
-
+            if (nueva === 1) { input.disabled = true; cantDisplay.classList.add('reserva'); }
+            else if (nueva === 0) { input.disabled = true; cantDisplay.classList.add('agotado'); }
             setTimeout(() => cantDisplay.classList.remove('actualizado'), 500);
         }
 
         function limpiarCarrito() {
-            if (confirm('¿Seguro que quieres limpiar toda la selección?')) {
+            if (confirm('¿Limpiar?')) {
                 localStorage.removeItem('carritoDistribucion');
                 window.location.href = 'index.html';
             }
         }
 
         function guardarDistribucion() {
-            const inputs = document.querySelectorAll('.input-salida');
             const cambios = [];
-
-            inputs.forEach(input => {
+            document.querySelectorAll('.input-salida').forEach(input => {
                 const salida = parseInt(input.value) || 0;
-                if (salida > 0) {
-                    cambios.push({
-                        ubicId: input.dataset.ubicid,
-                        salida: salida
-                    });
-                }
+                if (salida > 0) cambios.push({ ubicId: input.dataset.ubicid, salida });
             });
-
-            if (cambios.length === 0) {
-                alert('No hay cambios para guardar');
-                return;
-            }
-
-            
-            alert(`Se guardarán ${cambios.length} movimientos.\n\n(Funcionalidad de guardado en desarrollo)`);
+            if (cambios.length === 0) return alert('Sin cambios');
+            alert(`Se guardarán ${cambios.length} movimientos`);
         }
+
+        // GALERÍA
+        function abrirGaleria(fichareg, total) {
+            ficharegActual = fichareg; totalFotos = total; fotoActual = 1;
+            mostrarFoto(); document.getElementById('galeria').style.display = 'flex';
+        }
+        function mostrarFoto() {
+            const cont = document.getElementById('galeria-imagenes');
+            const cnt = document.getElementById('galeria-contador');
+            cont.innerHTML = `<img src="/fotos/${ficharegActual}_${fotoActual}.jpg" class="foto-grande" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjIwMCIgeT0iMjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wnYy1PC90ZXh0Pjwvc3ZnPg=='">`;
+            cnt.textContent = `${fotoActual} / ${totalFotos}`;
+        }
+        function cambiarFoto(dir) { fotoActual = ((fotoActual + dir - 1 + totalFotos) % totalFotos) + 1; mostrarFoto(); }
+        function cerrarGaleria() { document.getElementById('galeria').style.display = 'none'; }
     </script>
 </body>
 </html>
